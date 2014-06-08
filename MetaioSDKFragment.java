@@ -35,16 +35,17 @@ public abstract class MetaioSDKFragment extends Fragment implements MetaioSurfac
 	protected ViewGroup mRootLayout;
 
 	//--- Metaio関連 ---
-
+	/** コールバックハンドラ */
 	private IMetaioSDKCallback mCallback ;
 
+	/** GUIView */
 	protected View mGUIView ;
 
 	/** metaio SDK object */
 	protected IMetaioSDKAndroid metaioSDK;
 
 	/** metaio SurfaceView */
-	private MetaioSurfaceView mSurfaceView;
+	protected MetaioSurfaceView mSurfaceView;
 
 	/** Metaioライブラリロードフラグ */
 	private static boolean mNativeLibsLoaded = false;
@@ -60,6 +61,7 @@ public abstract class MetaioSDKFragment extends Fragment implements MetaioSurfac
 		mNativeLibsLoaded = IMetaioSDKAndroid.loadNativeLibs();
 	}
 
+	/** 描画物をロードする抽象メソッド */
 	public abstract void loadContents() ;
 
 	protected abstract int getGUILayout() ;
@@ -72,7 +74,6 @@ public abstract class MetaioSDKFragment extends Fragment implements MetaioSurfac
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		Log.d("LifeCycle", "onCreate");
-
 		mAppContext = getActivity().getApplication();
 		metaioSDK = null;
 		mSurfaceView = null;
@@ -110,10 +111,8 @@ public abstract class MetaioSDKFragment extends Fragment implements MetaioSurfac
 
 		try {
 			mSurfaceView = null;
-
 			// Start camera
 			startCamera();
-
 			// サーフェイスビューを追加（オーバーレイ）
 			mSurfaceView = new MetaioSurfaceView(mAppContext);
 			mSurfaceView.registerCallback(this);
@@ -125,14 +124,14 @@ public abstract class MetaioSDKFragment extends Fragment implements MetaioSurfac
 					ViewGroup.LayoutParams.WRAP_CONTENT));
 			mSurfaceView.setZOrderMediaOverlay(true);
 
-			//GUIレイアウト再生
+			//GUIレイアウト生成
 			final int layout = getGUILayout();
 			if (layout != 0){
 				mGUIView = View.inflate(mAppContext, layout, null);
 				if (mGUIView == null)
 					MetaioDebug.log(Log.ERROR, "ARViewActivity: error inflating the given layout: "+layout);
 			}
-			//GUIレイアウトが有れば作成
+			//GUIレイアウトが有ればオーバーレイする
 			if (mGUIView != null) {
 				if (mGUIView.getParent() == null) {
 					MetaioDebug.log("ARViewActivity.onResume: addContentView(mGUIView)");
@@ -189,7 +188,7 @@ public abstract class MetaioSDKFragment extends Fragment implements MetaioSurfac
 		Log.d("LifeCycle", "onStop");
 
 		if (metaioSDK != null) {
-			// Disable the camera
+			// カメラを無効化
 			metaioSDK.stopCamera();
 		}
 
@@ -247,6 +246,7 @@ public abstract class MetaioSDKFragment extends Fragment implements MetaioSurfac
 		//		Log.d("LifeCycle", "onDrawFrame");
 		if (mRendererInitialized) {
 			metaioSDK.render();
+			metaioSDK.requestCameraImage() ;
 		}
 	}
 
@@ -342,11 +342,16 @@ public abstract class MetaioSDKFragment extends Fragment implements MetaioSurfac
 					break;
 				}
 			}
-
+			String str = metaioSDK.getCameraParameters() ;
+			Log.v("Camera Param", str) ;
+			
+			metaioSDK.setConstantBlur(true) ;
+			metaioSDK.setConstantBlurIntensity(1.2f) ;
 			metaioSDK.startCamera(camera);
 		}
 		else{
 			MetaioDebug.log(Log.WARN, "No camera found on the device!");
 		}
 	}
+
 }
